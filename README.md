@@ -8,6 +8,11 @@
   <em>Your local videos. Reels-style. No internet needed.</em>
 </p>
 
+<p align="center">
+  <a href="https://github.com/Hanif-Imaduddin/Reelo/releases/latest"><img src="https://img.shields.io/github/v/release/Hanif-Imaduddin/Reelo?label=download&color=EC4899" alt="Latest release" /></a>
+  <a href="https://github.com/Hanif-Imaduddin/Reelo/actions/workflows/ci.yml"><img src="https://github.com/Hanif-Imaduddin/Reelo/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+</p>
+
 Reelo memutar koleksi video lokal di HP kamu secara fullscreen dengan tampilan swipe-able ala Instagram Reels / TikTok — video diacak dari satu folder pilihanmu, sepenuhnya offline. Tidak ada upload, tidak ada tracking, tidak butuh internet sama sekali.
 
 ## Fitur
