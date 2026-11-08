@@ -25,6 +25,29 @@ jobs:
 
       - run: flutter pub get
 
+      # Maven Central downloads from GitHub runners kept failing with 504 (redirect to
+      # github.com/JetBrains/kotlin/releases). Point every mavenCentral() at Google's mirror instead.
+      # Rewrites URLs rather than adding repos, since Flutter's Gradle plugin uses FAIL_ON_PROJECT_REPOS.
+      - name: Use Google mirror for Maven Central
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/maven-mirror.gradle <<'EOF'
+          def mirror = 'https://maven-central.storage-download.googleapis.com/maven2/'
+          def redirect = { repos ->
+            repos.withType(MavenArtifactRepository).configureEach { r ->
+              if (r.url.toString().startsWith('https://repo.maven.apache.org/maven2')) r.url = mirror
+            }
+          }
+          beforeSettings { s ->
+            redirect(s.pluginManagement.repositories)
+            redirect(s.dependencyResolutionManagement.repositories)
+          }
+          allprojects { p ->
+            redirect(p.buildscript.repositories)
+            redirect(p.repositories)
+          }
+          EOF
+
       - name: Decode release keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/reelo-release-key.jks
