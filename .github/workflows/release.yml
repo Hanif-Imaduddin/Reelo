@@ -38,7 +38,12 @@ jobs:
           storeFile=reelo-release-key.jks
           EOF
 
-      - run: flutter build apk --release
+      - name: Build APK (version taken from tag)
+        run: >
+          flutter build apk --release
+          --build-name=${GITHUB_REF_NAME#v}
+          --build-number=${{ github.run_number }}
+          --dart-define=APP_VERSION=${{ github.ref_name }}
 
       - name: Rename APK with version tag
         run: |

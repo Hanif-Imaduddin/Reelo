@@ -1,19 +1,22 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 import 'package:video_player/video_player.dart';
 import '../services/storage_service.dart';
 import '../widgets/video_player_item.dart';
-import 'folder_picker_screen.dart';
 
 class VideoFeedScreen extends StatefulWidget {
   final List<File> videos;
-  final String folderPath;
+  final Map<String, ViewStat> views;
+
+  /// Paths already counted since the app started: one view per video per app run.
+  static final countedThisRun = <String>{};
 
   const VideoFeedScreen({
     super.key,
     required this.videos,
-    required this.folderPath,
+    required this.views,
   });
 
   @override
@@ -22,6 +25,8 @@ class VideoFeedScreen extends StatefulWidget {
 
 class _VideoFeedScreenState extends State<VideoFeedScreen> {
   final _pageController = PageController();
+  final _storage = StorageService();
+  late final Map<String, ViewStat> _views = Map.of(widget.views);
   int _currentIndex = 0;
   final Map<int, VideoPlayerController> _controllers = {};
 
@@ -33,6 +38,7 @@ class _VideoFeedScreenState extends State<VideoFeedScreen> {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _updateControllers(0);
+    _countView(0);
   }
 
   @override
@@ -49,6 +55,17 @@ class _VideoFeedScreenState extends State<VideoFeedScreen> {
     _controllers[index]?.play();
     setState(() => _currentIndex = index);
     _updateControllers(index);
+    _countView(index);
+  }
+
+  ViewStat _statOf(String path) => _views[path] ?? (total: 0, weekly: 0);
+
+  void _countView(int index) {
+    final path = widget.videos[index].path;
+    if (!VideoFeedScreen.countedThisRun.add(path)) return;
+    final s = _statOf(path);
+    _views[path] = (total: s.total + 1, weekly: s.weekly + 1);
+    _storage.recordView(path);
   }
 
   Future<void> _updateControllers(int current) async {
@@ -76,17 +93,70 @@ class _VideoFeedScreenState extends State<VideoFeedScreen> {
     }
   }
 
-  Future<void> _changeFolder() async {
-    for (final ctrl in _controllers.values.toList()) {
-      ctrl.dispose();
+  static String _fileDate(File f) {
+    try {
+      final d = f.lastModifiedSync();
+      String two(int n) => n.toString().padLeft(2, '0');
+      return '${two(d.day)}/${two(d.month)}/${d.year}';
+    } catch (_) {
+      return '-';
     }
-    _controllers.clear();
-    await StorageService().clearFolderPath();
-    if (!mounted) return;
-    final navigator = Navigator.of(context);
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    navigator.pushReplacement(
-      MaterialPageRoute(builder: (_) => const FolderPickerScreen()),
+  }
+
+  void _showQueue() {
+    const rowHeight = 72.0;
+    final scroll = ScrollController(
+      initialScrollOffset: ((_currentIndex - 2) * rowHeight).clamp(0, double.infinity),
+    );
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF181818),
+      builder: (ctx) => SizedBox(
+        height: MediaQuery.of(ctx).size.height * 0.75,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Antrian · ${widget.videos.length} video',
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Divider(height: 1, color: Colors.white12),
+            Expanded(
+              child: ListView.builder(
+                controller: scroll,
+                itemExtent: rowHeight,
+                itemCount: widget.videos.length,
+                itemBuilder: (_, i) {
+                  final f = widget.videos[i];
+                  final s = _statOf(f.path);
+                  return ListTile(
+                    selected: i == _currentIndex,
+                    selectedTileColor: Colors.white12,
+                    selectedColor: Colors.white,
+                    textColor: Colors.white70,
+                    leading: SizedBox(
+                      width: 40,
+                      child: Text('${i + 1}', textAlign: TextAlign.right),
+                    ),
+                    title: Text(p.basename(f.path), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: Text(
+                      '${_fileDate(f)} · 👁 ${s.total}× · 7 hari: ${s.weekly}×',
+                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (i != _currentIndex) _pageController.jumpToPage(i);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -99,11 +169,21 @@ class _VideoFeedScreenState extends State<VideoFeedScreen> {
         scrollDirection: Axis.vertical,
         onPageChanged: _onPageChanged,
         itemCount: widget.videos.length,
-        itemBuilder: (_, index) => VideoPlayerItem(
-          controller: _controllers[index],
-          isActive: index == _currentIndex,
-          onChangeFolder: _changeFolder,
-        ),
+        itemBuilder: (_, index) {
+          final path = widget.videos[index].path;
+          final s = _statOf(path);
+          return VideoPlayerItem(
+            controller: _controllers[index],
+            isActive: index == _currentIndex,
+            fileName: p.basename(path),
+            position: index + 1,
+            total: widget.videos.length,
+            allTimeViews: s.total,
+            weeklyViews: s.weekly,
+            onShowQueue: _showQueue,
+            onHome: () => Navigator.pop(context),
+          );
+        },
       ),
     );
   }

@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoPlayerItem extends StatefulWidget {
   final VideoPlayerController? controller;
   final bool isActive;
-  final VoidCallback onChangeFolder;
+  final String fileName;
+  final int position;
+  final int total;
+  final int allTimeViews;
+  final int weeklyViews;
+  final VoidCallback onShowQueue;
+  final VoidCallback onHome;
 
   const VideoPlayerItem({
     super.key,
     required this.controller,
     required this.isActive,
-    required this.onChangeFolder,
+    required this.fileName,
+    required this.position,
+    required this.total,
+    required this.allTimeViews,
+    required this.weeklyViews,
+    required this.onShowQueue,
+    required this.onHome,
   });
 
   @override
@@ -76,6 +89,78 @@ class _VideoPlayerItemState extends State<VideoPlayerItem> {
     });
   }
 
+  void _copyFileName() {
+    Clipboard.setData(ClipboardData(text: widget.fileName));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(
+        content: Text('Nama file disalin'),
+        duration: Duration(seconds: 1),
+      ));
+  }
+
+  Widget _buildInfo(BuildContext context) {
+    const shadow = [Shadow(blurRadius: 4, color: Colors.black)];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _copyFileName,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.copy, color: Colors.white70, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    widget.fileName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      shadows: shadow,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Text(
+          'Dilihat ${widget.allTimeViews}× · 7 hari: ${widget.weeklyViews}×',
+          style: const TextStyle(color: Colors.white70, fontSize: 12, shadows: shadow),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onShowQueue,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.queue_play_next, color: Colors.white, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  '${widget.position} / ${widget.total}',
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ctrl = widget.controller;
@@ -106,14 +191,14 @@ class _VideoPlayerItemState extends State<VideoPlayerItem> {
               right: 16,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: widget.onChangeFolder,
+                onTap: widget.onHome,
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  child: const Icon(Icons.folder_open, color: Colors.white, size: 24),
+                  child: const Icon(Icons.home, color: Colors.white, size: 24),
                 ),
               ),
             ),
@@ -144,18 +229,28 @@ class _VideoPlayerItemState extends State<VideoPlayerItem> {
               bottom: 0,
               left: 0,
               right: 0,
-              child: GestureDetector(
-                onTap: () {},
-                child: VideoProgressIndicator(
-                  ctrl,
-                  allowScrubbing: true,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  colors: const VideoProgressColors(
-                    playedColor: Colors.white,
-                    bufferedColor: Colors.white24,
-                    backgroundColor: Colors.white12,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildInfo(context),
                   ),
-                ),
+                  GestureDetector(
+                    onTap: () {},
+                    child: VideoProgressIndicator(
+                      ctrl,
+                      allowScrubbing: true,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      colors: const VideoProgressColors(
+                        playedColor: Colors.white,
+                        bufferedColor: Colors.white24,
+                        backgroundColor: Colors.white12,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

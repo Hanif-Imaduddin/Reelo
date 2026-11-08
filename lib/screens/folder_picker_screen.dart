@@ -3,7 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import '../services/storage_service.dart';
 import '../services/permission_service.dart';
 import '../services/file_service.dart';
-import 'video_feed_screen.dart';
+import 'home_screen.dart';
 
 class FolderPickerScreen extends StatefulWidget {
   final bool permissionDenied;
@@ -84,7 +84,7 @@ class _FolderPickerScreenState extends State<FolderPickerScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => VideoFeedScreen(videos: videos, folderPath: folderPath),
+        builder: (_) => HomeScreen(videos: videos, folderPath: folderPath),
       ),
     );
   }

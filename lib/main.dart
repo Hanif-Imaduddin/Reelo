@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/splash_screen.dart';
 
+/// Injected by CI via --dart-define=APP_VERSION=vX.Y.Z (see release.yml).
+const appVersion = String.fromEnvironment('APP_VERSION', defaultValue: 'dev');
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../services/permission_service.dart';
 import '../services/file_service.dart';
+import '../main.dart';
 import 'folder_picker_screen.dart';
-import 'video_feed_screen.dart';
+import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,8 +54,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            VideoFeedScreen(videos: videos, folderPath: folderPath),
+        builder: (_) => HomeScreen(videos: videos, folderPath: folderPath),
       ),
     );
   }
@@ -93,6 +93,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 letterSpacing: 2,
               ),
             ),
+            Text(appVersion, style: TextStyle(color: Colors.white54, fontSize: 13)),
           ],
         ),
       ),
